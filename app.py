@@ -14,7 +14,7 @@ def home():
 
 @app.route('/kei-admin') #얘랑 아래 겟메소드의 어드민 URL은 달라야함.
 def admin():
-    return render_template('admin_html.html')
+    return render_template('admin_index.html')
 ## API 역할을 하는 부분
 
 @app.route('/order', methods=['POST'])
