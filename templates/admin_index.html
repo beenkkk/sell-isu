@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>컨스낵 관리자</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.8.18/themes/base/jquery-ui.css" type="text/css" />  
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>  
+    <script src="http://code.jquery.com/ui/1.8.18/jquery-ui.min.js"></script>
+
+    <style>
+        table, th, td {
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+    </style>
+    <script>
+      $(document).ready(function () {
+        $.ajax({
+          type: "GET",
+          url: "/api/admin",
+          data: {},
+          success: function (response) {
+            if (response["result"] == "success") {
+              let orders = response["orders"];
+              orders = orders.reverse();
+              for (let i = 0; i < orders.length; i++) {
+                // orders[i]['time'] = orders[i]['time'].getFullYear() + '-' +('0' + (orders[i]['time'].getMonth()+1)).slice(-2)+ '-' +  ('0' + orders[i]['time'].getDate()).slice(-2) + ' '+orders[i]['time'].getHours()+ ':'+('0' + (orders[i]['time'].getMinutes())).slice(-2)+ ':'+orders[i]['time'].getSeconds()
+                var temp_html = `
+                            <tr>
+                                <td align="center">${i + 1}</td>
+                                <td align="center">${orders[i]["time"]}</td>
+                                <td align="center">${orders[i]["name"]}</td>
+                                <td align="center">${orders[i]["price"]}</td>
+                                <td align="center">${orders[i]["qty"]}</td>
+                            </tr>
+                            `;
+                $("#orders-box").append(temp_html);
+              }
+            } else {
+              alert("주문 내역을 받아오지 못했습니다.");
+            }
+          },
+        });
+      });
+
+      $(function(){
+        var today = getTodayType();
+        // var week = getWeekType();
+        // var month = getMonthType();
+      })
+
+      function getTodayType(){
+        var date = new Date();
+        return date.getFullYear() + "-" + ("0"+(date.getMonth()+1)).slice(-2) + "-" + ("0"+(date.getDate())).slice(-2);
+      }
+      // function getWeekType(){
+      //   var date = new Date();
+      //   return date.getFullYear() + "-" + ("0"+(date.getMonth()+1)).slice(-2) + "-" + ("0"+(date.getDate()-6)).slice(-2);
+      // }
+      // function getMonthType(){
+      //   var date = new Date();
+      //   return date.getFullYear() + "-" + ("0"+(date.getMonth()+1)).slice(-2) + "-" + ("0"+(date.getDate()-29)).slice(-2);
+      // }
+
+
+      function fnExcelReport(id, title) {
+
+        var tab_text =
+          '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+        tab_text =
+          tab_text +
+          '<head><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">';
+        tab_text =
+          tab_text +
+          "<xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>";
+        tab_text = tab_text + "<x:Name>orders</x:Name>";
+        tab_text =
+          tab_text +
+          "<x:WorksheetOptions><x:Panes></x:Panes></x:WorksheetOptions></x:ExcelWorksheet>";
+        tab_text =
+          tab_text +
+          "</x:ExcelWorksheets></x:ExcelWorkbook></xml></head><body>";
+        tab_text = tab_text + "<table border='1px'>";
+        var exportTable = $("#" + id).clone();
+        exportTable.find("input").each(function (index, elem) {
+          $(elem).remove();
+        });
+        tab_text = tab_text + exportTable.html();
+        tab_text = tab_text + "</table></body></html>";
+        var data_type = "data:application/vnd.ms-excel";
+        var ua = window.navigator.userAgent;
+        var msie = ua.indexOf("MSIE ");
+        var fileName = title + ".xls";
+        //Explorer 환경에서 다운로드
+        if (msie > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./)) {
+          if (window.navigator.msSaveBlob) {
+            var blob = new Blob([tab_text], {
+              type: "application/csv;charset=utf-8;",
+            });
+            navigator.msSaveBlob(blob, fileName);
+          }
+        } else {
+          var blob2 = new Blob([tab_text], {
+            type: "application/csv;charset=utf-8;",
+          });
+          var filename = fileName;
+          var elem = window.document.createElement("a");
+          elem.href = window.URL.createObjectURL(blob2);
+          elem.download = filename;
+          document.body.appendChild(elem);
+          elem.click();
+          document.body.removeChild(elem);
+        }
+      }
+    </script>
+
+<script type="text/javascript">
+  $(document).ready(function () {
+          $.datepicker.setDefaults($.datepicker.regional['ko']); 
+          $( "#startDate" ).datepicker({
+               changeMonth: true, 
+               changeYear: true,
+               nextText: '다음 달',
+               prevText: '이전 달', 
+               dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+               dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'], 
+               monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+               monthNames: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+               dateFormat: "yy-mm-dd",
+               maxDate: 0,                       // 선택할수있는 최소날짜, ( 0 : 오늘 이후 날짜 선택 불가)
+               onClose: function( selectedDate ) {    
+                    //시작일(startDate) datepicker가 닫힐때
+                    //종료일(endDate)의 선택할수있는 최소 날짜(minDate)를 선택한 시작일로 지정
+                   $("#endDate").datepicker( "option", "minDate", selectedDate );
+               }    
+
+          });
+          $( "#endDate" ).datepicker({
+               changeMonth: true, 
+               changeYear: true,
+               nextText: '다음 달',
+               prevText: '이전 달', 
+               dayNames: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+               dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'], 
+               monthNamesShort: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+               monthNames: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+               dateFormat: "yy-mm-dd",
+               maxDate: 0,                       // 선택할수있는 최대날짜, ( 0 : 오늘 이후 날짜 선택 불가)
+               onClose: function( selectedDate ) {    
+                   // 종료일(endDate) datepicker가 닫힐때
+                   // 시작일(startDate)의 선택할수있는 최대 날짜(maxDate)를 선택한 시작일로 지정
+                   $("#startDate").datepicker( "option", "maxDate", selectedDate );
+               }    
+
+          });    
+  });
+
+function search(){
+  if($("input[data-value='today']").prop('checked')){
+    // $('#startDate').val(getTodayType())
+    // $('#endDate').val(getTodayType())
+      $("#orders-box").empty();
+      $.ajax({
+          type: "POST",
+          url: "/api/admin/date",
+          data: {
+            time_give: getTodayType(),
+            },
+          success: function (response) {
+            if (response["result"] == "success") {
+              let orders = response["orders"];
+              orders = orders.reverse();
+              for (let i = 0; i < orders.length; i++) {
+                // orders[i]['time'] = orders[i]['time'].getFullYear() + '-' +('0' + (orders[i]['time'].getMonth()+1)).slice(-2)+ '-' +  ('0' + orders[i]['time'].getDate()).slice(-2) + ' '+orders[i]['time'].getHours()+ ':'+('0' + (orders[i]['time'].getMinutes())).slice(-2)+ ':'+orders[i]['time'].getSeconds()
+                var temp_html = `
+                            <tr>
+                                <td align="center">${i + 1}</td>
+                                <td align="center">${orders[i]["time"]}</td>
+                                <td align="center">${orders[i]["name"]}</td>
+                                <td align="center">${orders[i]["price"]}</td>
+                                <td align="center">${orders[i]["qty"]}</td>
+                            </tr>
+                            `;
+                $("#orders-box").append(temp_html);
+              }
+            } else {
+              alert("주문 내역을 받아오지 못했습니다.");
+            }
+          },
+        });
+    }
+    else{
+      $("#orders-box").empty();
+      $.ajax({
+          type: "GET",
+          url: "/api/admin",
+          data: {},
+          success: function (response) {
+            if (response["result"] == "success") {
+              let orders = response["orders"];
+              orders = orders.reverse();
+              for (let i = 0; i < orders.length; i++) {
+                // orders[i]['time'] = orders[i]['time'].getFullYear() + '-' +('0' + (orders[i]['time'].getMonth()+1)).slice(-2)+ '-' +  ('0' + orders[i]['time'].getDate()).slice(-2) + ' '+orders[i]['time'].getHours()+ ':'+('0' + (orders[i]['time'].getMinutes())).slice(-2)+ ':'+orders[i]['time'].getSeconds()
+                var temp_html = `
+                            <tr>
+                                <td align="center">${i + 1}</td>
+                                <td align="center">${orders[i]["time"]}</td>
+                                <td align="center">${orders[i]["name"]}</td>
+                                <td align="center">${orders[i]["price"]}</td>
+                                <td align="center">${orders[i]["qty"]}</td>
+                            </tr>
+                            `;
+                $("#orders-box").append(temp_html);
+              }
+            } else {
+              alert("주문 내역을 받아오지 못했습니다.");
+            }
+          },
+        });
+    }
+
+    
+
+  };
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+
+
+  </head>
+
+  <body>
+    <input type="radio" name="chk_date" data-value="today" value="오늘">오늘
+    <!-- <input type="radio" name="chk_date" data-value="week" value="1주일">1주일
+    <input type="radio" name="chk_date" data-value="month" value="1개월">1개월 -->
+    <input type="radio" name="chk_date" data-value="all" value="전체" checked="checked">전체
+
+    <!-- <input type="text" id="startDate">
+    <input type="text" id="endDate"> -->
+
+    <button type="button" onclick="search()">
+      Search
+    </button>
+
+    <button type="button" onclick="fnExcelReport('orders-box','consnack');">
+      Excel Download
+    </button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>주문일시</th>
+          <th>상품명</th>
+          <th>개당 가격(원)</th>
+          <th>주문 수량</th>
+          <!-- <th>전화번호</th> -->
+        </tr>
+      </thead>
+      <tbody id="orders-box"></tbody>
+    </table>
+  </body>
+</html>
